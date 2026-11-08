@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { signOut } from "@/app/auth/actions";
+import Link from "next/link";
 
 async function DashboardContent() {
   const { user } = await requireUser();
@@ -12,6 +13,7 @@ async function DashboardContent() {
     </p>
   );
 }
+
 
 export default function DashboardPage() {
   return (
@@ -29,6 +31,9 @@ export default function DashboardPage() {
       >
         <DashboardContent />
       </Suspense>
+      <Link href="/dashboard/files" className="underline">
+  Source files
+</Link>
     </main>
   );
 }
