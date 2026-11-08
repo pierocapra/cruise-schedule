@@ -32,8 +32,8 @@ export default function DashboardPage() {
         <DashboardContent />
       </Suspense>
       <Link href="/dashboard/files" className="underline">
-  Source files
-</Link>
+        Source files
+      </Link>
     </main>
   );
 }
