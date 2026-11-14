@@ -1,0 +1,124 @@
+{
+  "events": [
+    {
+      "event_date": "2026-11-14",
+      "start_time": "11:00",
+      "end_time": "12:00",
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "tech_call",
+      "title": "Tech call - Starlight lighting cues",
+      "department": "Production Theatre",
+      "notes": "Lighting and sound only",
+      "source_snippet": "11:00 - 12:00 | Theatre | Tech call - Starlight lighting cues | Production Theatre | Lighting and sound only"
+    },
+    {
+      "event_date": "2026-11-14",
+      "start_time": "14:00",
+      "end_time": "15:00",
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "tech_call",
+      "title": "Sound check",
+      "department": "Theatre",
+      "notes": null,
+      "source_snippet": "14:00 - 15:00 | Theatre | Sound check | Theatre"
+    },
+    {
+      "event_date": "2026-11-14",
+      "start_time": "20:30",
+      "end_time": "21:45",
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "show",
+      "title": "Starlight - Production Show",
+      "department": "Production Theatre",
+      "notes": null,
+      "source_snippet": "8:30pm - 9:45pm | Theatre | Starlight - Production Show | Production Theatre"
+    },
+    {
+      "event_date": "2026-11-14",
+      "start_time": "23:30",
+      "end_time": "00:30",
+      "ends_next_day": true,
+      "venue": "Theatre",
+      "type": "rehearsal",
+      "title": "Rehearsal - new show",
+      "department": "Production Cast",
+      "notes": "Full cast, character shoes",
+      "source_snippet": "23:30 - 00:30 | Theatre | Rehearsal - new show | Production Cast | Full cast, character shoes"
+    },
+    {
+      "event_date": "2026-11-15",
+      "start_time": "09:30",
+      "end_time": "10:30",
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "rehearsal",
+      "title": "Cast rehearsal - dance calls",
+      "department": "Production Cast",
+      "notes": null,
+      "source_snippet": "09:30 - 10:30 | Theatre | Cast rehearsal - dance calls | Production Cast"
+    },
+    {
+      "event_date": "2026-11-15",
+      "start_time": "13:00",
+      "end_time": "14:00",
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "tech_call",
+      "title": "Band call and sound check",
+      "department": "Production Theatre",
+      "notes": "Band and sound tech",
+      "source_snippet": "13.00 – 14.00 | Theatre | Band call and sound check | Production Theatre | Band and sound tech"
+    },
+    {
+      "event_date": "2026-11-15",
+      "start_time": "17:45",
+      "end_time": null,
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "other",
+      "title": "Cast warm-up",
+      "department": "Production Cast",
+      "notes": null,
+      "source_snippet": "17:45 | Theatre | Cast warm-up | Production Cast"
+    },
+    {
+      "event_date": "2026-11-15",
+      "start_time": "18:30",
+      "end_time": "19:30",
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "show",
+      "title": "Starlight - Production Show (early)",
+      "department": "Production Theatre",
+      "notes": null,
+      "source_snippet": "18:30 - 19:30 | Theatre | Starlight - Production Show (early) | Production Theatre"
+    },
+    {
+      "event_date": "2026-11-15",
+      "start_time": "21:30",
+      "end_time": "22:30",
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "show",
+      "title": "Starlight - Production Show (late)",
+      "department": "Production Theatre",
+      "notes": null,
+      "source_snippet": "21:30 - 22:30 | Theatre | Starlight - Production Show (late) | Production Theatre"
+    },
+    {
+      "event_date": "2026-11-16",
+      "start_time": "08:00",
+      "end_time": "09:00",
+      "ends_next_day": false,
+      "venue": "Theatre",
+      "type": "other",
+      "title": "Crew safety drill",
+      "department": "Production Theatre",
+      "notes": "Mandatory",
+      "source_snippet": "08:00 - 09:00 | Theatre | Crew safety drill | Production Theatre | Mandatory"
+    }
+  ]
+}

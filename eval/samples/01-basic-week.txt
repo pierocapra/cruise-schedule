@@ -1,0 +1,27 @@
+## Page 1
+MS EXAMPLE | ENTERTAINMENT SCHEDULE | 14 - 21 NOV 2026
+Ship time. Clocks go forward 1 hour tonight at 02:00.
+SATURDAY 14 NOV 2026
+Time | Venue | Activity | Department | Notes
+10:00 - 10:45 | Atrium | Morning Trivia | Cruise Staff
+11:00 - 12:00 | Theatre | Tech call - Starlight lighting cues | Production Theatre | Lighting and sound only
+14:00 - 15:00 | Theatre | Sound check | Theatre
+15:30 - 16:30 | Lido Deck | Poolside Band | Live Music
+8:30pm - 9:45pm | Theatre | Starlight - Production Show | Production Theatre
+21:00 | Crow's Nest | Karaoke | Cruise Staff
+23:30 - 00:30 | Theatre | Rehearsal - new show | Production Cast | Full cast, character shoes
+SUNDAY 15 NOV 2026
+Time | Venue | Activity | Department | Notes
+09:30 - 10:30 | Theatre | Cast rehearsal - dance calls | Production Cast
+11:00 - 11:45 | Atrium | Art Auction | Guest Services
+13.00 – 14.00 | Theatre | Band call and sound check | Production Theatre | Band and sound tech
+## Page 2
+SUNDAY 15 NOV 2026 (cont.)
+Time | Venue | Activity | Department | Notes
+17:45 | Theatre | Cast warm-up | Production Cast
+18:30 - 19:30 | Theatre | Starlight - Production Show (early) | Production Theatre
+20:00 - 21:00 | Theatre | Guest Entertainer - Magic Show | Guest Entertainment
+21:30 - 22:30 | Theatre | Starlight - Production Show (late) | Production Theatre
+MONDAY 16 NOV 2026
+Time | Venue | Activity | Department | Notes
+08:00 - 09:00 | Theatre | Crew safety drill | Production Theatre | Mandatory
