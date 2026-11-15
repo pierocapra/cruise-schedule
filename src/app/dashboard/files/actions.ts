@@ -6,6 +6,9 @@ import { requireUser } from "@/lib/auth";
 import { describeParseError } from "@/lib/ingest/parse-error-message";
 import { parseSource } from "@/lib/ingest/parse-source";
 import { preparePastedText } from "@/lib/ingest/prepare-pasted-text";
+import { extractEvents } from "@/lib/extraction/extract-events";
+import { createGeminiClientFromEnv } from "@/lib/extraction/gemini-client";
+import { DEPARTMENT_NAMES } from "@/lib/extraction/department-names";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -275,4 +278,142 @@ function blockedByEventsMessage(count: number | null): string {
         : `This file has ${count} extracted events`;
 
   return `${subject}. Delete the events first, then delete the file.`;
+}
+
+const MAX_DAILY_EXTRACTIONS = Number(process.env.MAX_DAILY_EXTRACTIONS ?? "20");
+
+export type ExtractSourceEventsResult =
+  | { ok: true; kept: number; rejected: number }
+  | { ok: false; message: string };
+
+export async function extractSourceEvents(
+  sourceFileId: string,
+): Promise<ExtractSourceEventsResult> {
+  if (typeof sourceFileId !== "string" || !UUID_PATTERN.test(sourceFileId)) {
+    return { ok: false, message: "Invalid file id." };
+  }
+
+  const { supabase } = await requireUser();
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return {
+      ok: false,
+      message: "Your session has expired. Please sign in again.",
+    };
+  }
+
+  const { data: source, error: loadError } = await supabase
+    .from("source_files")
+    .select("id, raw_text, parsed_at")
+    .eq("id", sourceFileId)
+    .maybeSingle();
+
+  if (loadError) {
+    console.error("extractSourceEvents: load failed", { sourceFileId, loadError });
+    return { ok: false, message: "Could not load this file. Please try again." };
+  }
+
+  if (!source) {
+    return { ok: false, message: "That file could not be found." };
+  }
+
+  if (!source.parsed_at || !source.raw_text) {
+    return { ok: false, message: "This file has not been parsed yet." };
+  }
+
+  const { count: existingEventCount, error: countError } = await supabase
+    .from("extracted_events")
+    .select("id", { count: "exact", head: true })
+    .eq("source_file_id", source.id);
+
+  if (countError) {
+    console.error("extractSourceEvents: event count failed", {
+      sourceFileId,
+      countError,
+    });
+    return { ok: false, message: "Could not check for existing events. Please try again." };
+  }
+
+  if (existingEventCount !== null && existingEventCount > 0) {
+    return {
+      ok: false,
+      message:
+        "This file already has extracted events. Delete them before extracting again.",
+    };
+  }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count: recentCallCount, error: recentCallError } = await supabase
+    .from("ai_extraction_calls")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", since);
+
+  if (recentCallError) {
+    console.error("extractSourceEvents: rate limit check failed", {
+      sourceFileId,
+      recentCallError,
+    });
+    return { ok: false, message: "Could not check your extraction limit. Please try again." };
+  }
+
+  if (recentCallCount !== null && recentCallCount >= MAX_DAILY_EXTRACTIONS) {
+    return {
+      ok: false,
+      message: `You've reached the limit of ${MAX_DAILY_EXTRACTIONS} extractions per day. Try again later.`,
+    };
+  }
+
+  const { error: logError } = await supabase.from("ai_extraction_calls").insert({});
+
+  if (logError) {
+    console.error("extractSourceEvents: call log insert failed", {
+      sourceFileId,
+      logError,
+    });
+    return { ok: false, message: "Could not record this extraction attempt." };
+  }
+
+  const client = createGeminiClientFromEnv();
+  const result = await extractEvents({
+    rawText: source.raw_text,
+    departmentNames: DEPARTMENT_NAMES,
+    client,
+  });
+
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+
+  if (result.events.length > 0) {
+    const { error: insertError } = await supabase.from("extracted_events").insert(
+      result.events.map((event) => ({
+        source_file_id: source.id,
+        event_date: event.event_date,
+        start_time: event.start_time,
+        end_time: event.end_time,
+        ends_next_day: event.ends_next_day,
+        venue: event.venue,
+        type: event.type,
+        title: event.title,
+        department: event.department,
+        notes: event.notes,
+        source_snippet: event.source_snippet,
+      })),
+    );
+
+    if (insertError) {
+      console.error("extractSourceEvents: events insert failed", {
+        sourceFileId,
+        insertError,
+      });
+      return {
+        ok: false,
+        message: "Extraction succeeded but saving the events failed.",
+      };
+    }
+  }
+
+  revalidatePath("/dashboard/files");
+  return { ok: true, kept: result.events.length, rejected: result.rejected.length };
 }

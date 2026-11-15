@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 
 import { ParseButton } from "./parse-button";
 import { DeleteButton } from "./delete-button";
+import { ExtractButton } from "./extract-button";
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -74,6 +75,7 @@ export async function FilesContent() {
                   />
                 )}
                 <DeleteButton sourceFileId={file.id} fileName={file.file_name} />
+                <ExtractButton sourceFileId={file.id} />
               </div>
             </div>
 
