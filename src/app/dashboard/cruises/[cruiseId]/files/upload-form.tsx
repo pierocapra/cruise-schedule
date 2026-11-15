@@ -31,7 +31,11 @@ function safeName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-export function UploadForm() {
+type UploadFormProps = {
+  cruiseId: string;
+};
+
+export function UploadForm({ cruiseId }: UploadFormProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -83,6 +87,7 @@ export function UploadForm() {
         file_name: file.name,
         file_type: info.fileType,
         storage_path: storagePath,
+        cruise_id: cruiseId,
       });
 
       if (insertError) {

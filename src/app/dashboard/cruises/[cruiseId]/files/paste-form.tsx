@@ -15,7 +15,11 @@ function countChars(value: string): number {
   return value.replace(/\r\n?/g, "\n").replace(/\u0000/g, "").trim().length;
 }
 
-export function PasteForm() {
+type PasteFormProps = {
+  cruiseId: string;
+};
+
+export function PasteForm({ cruiseId }: PasteFormProps) {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +36,7 @@ export function PasteForm() {
 
     startTransition(async () => {
       try {
-        const result = await createTextSource({ title, text });
+        const result = await createTextSource({ title, text, cruiseId });
 
         if (result.ok) {
           setTitle("");

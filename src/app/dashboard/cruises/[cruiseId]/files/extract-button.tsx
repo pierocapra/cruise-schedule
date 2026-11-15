@@ -4,25 +4,25 @@ import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { parseSourceFile, type ParseSourceFileResult } from "./actions";
+import { extractSourceEvents, type ExtractSourceEventsResult } from "./actions";
 
-type ParseButtonProps = {
+type ExtractButtonProps = {
   sourceFileId: string;
-  alreadyParsed: boolean;
+  cruiseId: string;
 };
 
-export function ParseButton({ sourceFileId, alreadyParsed }: ParseButtonProps) {
+export function ExtractButton({ sourceFileId, cruiseId }: ExtractButtonProps) {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<ParseSourceFileResult | null>(null);
+  const [result, setResult] = useState<ExtractSourceEventsResult | null>(null);
 
   function handleClick() {
     setResult(null);
 
     startTransition(async () => {
       try {
-        setResult(await parseSourceFile(sourceFileId));
+        setResult(await extractSourceEvents(sourceFileId, cruiseId));
       } catch (error) {
-        console.error("ParseButton: action call failed", error);
+        console.error("ExtractButton: action call failed", error);
         setResult({
           ok: false,
           message: "Could not reach the server. Check your connection and try again.",
@@ -40,7 +40,7 @@ export function ParseButton({ sourceFileId, alreadyParsed }: ParseButtonProps) {
         onClick={handleClick}
         disabled={isPending}
       >
-        {isPending ? "Parsing…" : alreadyParsed ? "Parse again" : "Parse"}
+        {isPending ? "Extracting…" : "Extract"}
       </Button>
 
       {result && !result.ok && (
@@ -49,9 +49,12 @@ export function ParseButton({ sourceFileId, alreadyParsed }: ParseButtonProps) {
         </p>
       )}
 
-            {result?.ok && !result.needsOcr && (
+      {result?.ok && (
         <p className="text-sm" role="status">
-          Extracted {result.characters.toLocaleString()} characters.
+          Extracted {result.kept} event{result.kept === 1 ? "" : "s"}
+          {result.rejected > 0 &&
+            ` (${result.rejected} rejected — check the AI's response)`}
+          .
         </p>
       )}
     </div>

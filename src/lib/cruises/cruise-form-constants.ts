@@ -1,0 +1,1 @@
+export { MAX_ITINERARY_NOTES_CHARS, MAX_SHIP_CHARS } from "./cruise-schema";

@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 
 import { ParseButton } from "./parse-button";
 import { DeleteButton } from "./delete-button";
+import { DeleteEventsButton } from "./delete-events-button";
 import { ExtractButton } from "./extract-button";
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
@@ -31,7 +32,11 @@ function describeStatus(
   };
 }
 
-export async function FilesContent() {
+type FilesContentProps = {
+  cruiseId: string;
+};
+
+export async function FilesContent({ cruiseId }: FilesContentProps) {
   const { supabase } = await requireUser();
 
   const { data, error } = await supabase
@@ -39,6 +44,7 @@ export async function FilesContent() {
     .select(
       "id, file_name, file_type, storage_path, created_at, parsed_at, needs_ocr, parse_warnings",
     )
+    .eq("cruise_id", cruiseId)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -49,11 +55,33 @@ export async function FilesContent() {
     return <p className="text-muted-foreground">No files uploaded yet.</p>;
   }
 
+  // One query for every file's event count, rather than one query per file.
+  const fileIds = data.map((file) => file.id);
+  const filesWithEvents = new Set<string>();
+
+  if (fileIds.length > 0) {
+    const { data: eventRows, error: eventsError } = await supabase
+      .from("extracted_events")
+      .select("source_file_id")
+      .in("source_file_id", fileIds);
+
+    if (eventsError) {
+      console.error("FilesContent: event lookup failed", { eventsError });
+      // Not fatal: the list still renders, just without the Delete events
+      // button until the next load.
+    } else {
+      for (const row of eventRows ?? []) {
+        filesWithEvents.add(row.source_file_id);
+      }
+    }
+  }
+
   return (
     <ul className="divide-y rounded-md border">
       {data.map((file) => {
         const status = describeStatus(file.parsed_at, file.needs_ocr);
         const warnings: string[] = file.parse_warnings ?? [];
+        const hasEvents = filesWithEvents.has(file.id);
 
         return (
           <li key={file.id} className="space-y-2 p-3">
@@ -71,11 +99,20 @@ export async function FilesContent() {
                 {file.storage_path && (
                   <ParseButton
                     sourceFileId={file.id}
+                    cruiseId={cruiseId}
                     alreadyParsed={file.parsed_at !== null}
                   />
                 )}
-                <DeleteButton sourceFileId={file.id} fileName={file.file_name} />
-                <ExtractButton sourceFileId={file.id} />
+                <DeleteButton
+                  sourceFileId={file.id}
+                  cruiseId={cruiseId}
+                  fileName={file.file_name}
+                />
+                {hasEvents ? (
+                  <DeleteEventsButton sourceFileId={file.id} cruiseId={cruiseId} />
+                ) : (
+                  <ExtractButton sourceFileId={file.id} cruiseId={cruiseId} />
+                )}
               </div>
             </div>
 

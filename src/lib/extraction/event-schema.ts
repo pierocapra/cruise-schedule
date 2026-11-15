@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DATE_PATTERN, isRealIsoDate } from "../dates";
 
 // Keep in sync with extracted_events_type_check in the database.
 export const EVENT_TYPES = ["show", "rehearsal", "tech_call", "other"] as const;
@@ -10,7 +11,6 @@ export const MAX_NOTES_CHARS = 1000;
 export const MAX_SNIPPET_CHARS = 2000;
 export const MAX_TITLE_CHARS = 200;
 
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /**
@@ -36,17 +36,7 @@ export const eventFieldsSchema = z.object({
 // not reported twice by a cross-field rule.
 function isRealDate(value: string): boolean {
   if (!DATE_PATTERN.test(value)) return true;
-
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(5, 7));
-  const day = Number(value.slice(8, 10));
-  const date = new Date(Date.UTC(year, month - 1, day));
-
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
+  return isRealIsoDate(value);
 }
 
 function endsAfterStart(start: string | null, end: string | null): boolean {

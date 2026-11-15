@@ -4,24 +4,26 @@ import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { extractSourceEvents, type ExtractSourceEventsResult } from "./actions";
+import { parseSourceFile, type ParseSourceFileResult } from "./actions";
 
-type ExtractButtonProps = {
+type ParseButtonProps = {
   sourceFileId: string;
+  cruiseId: string;
+  alreadyParsed: boolean;
 };
 
-export function ExtractButton({ sourceFileId }: ExtractButtonProps) {
+export function ParseButton({ sourceFileId, cruiseId, alreadyParsed }: ParseButtonProps) {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<ExtractSourceEventsResult | null>(null);
+  const [result, setResult] = useState<ParseSourceFileResult | null>(null);
 
   function handleClick() {
     setResult(null);
 
     startTransition(async () => {
       try {
-        setResult(await extractSourceEvents(sourceFileId));
+        setResult(await parseSourceFile(sourceFileId, cruiseId));
       } catch (error) {
-        console.error("ExtractButton: action call failed", error);
+        console.error("ParseButton: action call failed", error);
         setResult({
           ok: false,
           message: "Could not reach the server. Check your connection and try again.",
@@ -39,7 +41,7 @@ export function ExtractButton({ sourceFileId }: ExtractButtonProps) {
         onClick={handleClick}
         disabled={isPending}
       >
-        {isPending ? "Extracting…" : "Extract"}
+        {isPending ? "Parsing…" : alreadyParsed ? "Parse again" : "Parse"}
       </Button>
 
       {result && !result.ok && (
@@ -48,12 +50,9 @@ export function ExtractButton({ sourceFileId }: ExtractButtonProps) {
         </p>
       )}
 
-      {result?.ok && (
+            {result?.ok && !result.needsOcr && (
         <p className="text-sm" role="status">
-          Extracted {result.kept} event{result.kept === 1 ? "" : "s"}
-          {result.rejected > 0 &&
-            ` (${result.rejected} rejected — check the AI's response)`}
-          .
+          Extracted {result.characters.toLocaleString()} characters.
         </p>
       )}
     </div>

@@ -13,16 +13,24 @@ import { DEPARTMENT_NAMES } from "@/lib/extraction/department-names";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function filesPath(cruiseId: string): string {
+  return `/dashboard/cruises/${cruiseId}/files`;
+}
+
 export type ParseSourceFileResult =
   | { ok: true; needsOcr: boolean; warnings: string[]; characters: number }
   | { ok: false; message: string };
 
 export async function parseSourceFile(
   sourceFileId: string,
+  cruiseId: string,
 ): Promise<ParseSourceFileResult> {
   // 1. Validate input. A server action argument is untrusted.
   if (typeof sourceFileId !== "string" || !UUID_PATTERN.test(sourceFileId)) {
     return { ok: false, message: "Invalid file id." };
+  }
+  if (typeof cruiseId !== "string" || !UUID_PATTERN.test(cruiseId)) {
+    return { ok: false, message: "Invalid cruise id." };
   }
 
   // 2. Authenticate. requireUser() handles the redirect for signed-out
@@ -114,7 +122,7 @@ export async function parseSourceFile(
     return { ok: false, message: "File not found." };
   }
 
-  revalidatePath("/dashboard/files");
+  revalidatePath(filesPath(cruiseId));
 
   return {
     ok: true,
@@ -131,7 +139,12 @@ export type CreateTextSourceResult =
 export async function createTextSource(input: {
   title: string;
   text: string;
+  cruiseId: string;
 }): Promise<CreateTextSourceResult> {
+  if (typeof input?.cruiseId !== "string" || !UUID_PATTERN.test(input.cruiseId)) {
+    return { ok: false, message: "Invalid cruise id." };
+  }
+
   const { supabase } = await requireUser();
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -154,16 +167,23 @@ export async function createTextSource(input: {
       file_type: "text",
       raw_text: prepared.text,
       parsed_at: new Date().toISOString(),
+      cruise_id: input.cruiseId,
     })
     .select("id")
     .single();
 
   if (error || !data) {
     console.error("createTextSource: insert failed", { error });
+
+    // 23503 = foreign_key_violation: the cruise id doesn't belong to you.
+    if (error?.code === "23503") {
+      return { ok: false, message: "That cruise could not be found." };
+    }
+
     return { ok: false, message: "Could not save the text. Please try again." };
   }
 
-  revalidatePath("/dashboard/files");
+  revalidatePath(filesPath(input.cruiseId));
 
   return { ok: true, id: data.id };
 }
@@ -174,9 +194,13 @@ export type DeleteSourceFileResult =
 
 export async function deleteSourceFile(
   sourceFileId: string,
+  cruiseId: string,
 ): Promise<DeleteSourceFileResult> {
   if (typeof sourceFileId !== "string" || !UUID_PATTERN.test(sourceFileId)) {
     return { ok: false, message: "Invalid file id." };
+  }
+  if (typeof cruiseId !== "string" || !UUID_PATTERN.test(cruiseId)) {
+    return { ok: false, message: "Invalid cruise id." };
   }
 
   const { supabase } = await requireUser();
@@ -203,7 +227,7 @@ export async function deleteSourceFile(
   if (!row) {
     // Already deleted (double click, stale tab) or not visible to this user.
     // Either way the requested end state is true; refresh the list.
-    revalidatePath("/dashboard/files");
+    revalidatePath(filesPath(cruiseId));
     return { ok: true };
   }
 
@@ -265,7 +289,7 @@ export async function deleteSourceFile(
     return { ok: false, message: "Could not delete this file. Please try again." };
   }
 
-  revalidatePath("/dashboard/files");
+  revalidatePath(filesPath(cruiseId));
   return { ok: true };
 }
 
@@ -288,9 +312,13 @@ export type ExtractSourceEventsResult =
 
 export async function extractSourceEvents(
   sourceFileId: string,
+  cruiseId: string,
 ): Promise<ExtractSourceEventsResult> {
   if (typeof sourceFileId !== "string" || !UUID_PATTERN.test(sourceFileId)) {
     return { ok: false, message: "Invalid file id." };
+  }
+  if (typeof cruiseId !== "string" || !UUID_PATTERN.test(cruiseId)) {
+    return { ok: false, message: "Invalid cruise id." };
   }
 
   const { supabase } = await requireUser();
@@ -414,6 +442,92 @@ export async function extractSourceEvents(
     }
   }
 
-  revalidatePath("/dashboard/files");
+  revalidatePath(filesPath(cruiseId));
   return { ok: true, kept: result.events.length, rejected: result.rejected.length };
+}
+
+export type FileEventSummary = { total: number; reviewed: number };
+
+export type GetFileEventSummaryResult =
+  | { ok: true; summary: FileEventSummary }
+  | { ok: false; message: string };
+
+export async function getFileEventSummary(
+  sourceFileId: string,
+): Promise<GetFileEventSummaryResult> {
+  if (typeof sourceFileId !== "string" || !UUID_PATTERN.test(sourceFileId)) {
+    return { ok: false, message: "Invalid file id." };
+  }
+
+  // Read-only: no auth.getUser() re-check, since nothing here writes.
+  const { supabase } = await requireUser();
+
+  const { count: total, error: totalError } = await supabase
+    .from("extracted_events")
+    .select("id", { count: "exact", head: true })
+    .eq("source_file_id", sourceFileId);
+
+  if (totalError) {
+    console.error("getFileEventSummary: total count failed", {
+      sourceFileId,
+      totalError,
+    });
+    return { ok: false, message: "Could not check this file's events. Please try again." };
+  }
+
+  const { count: reviewed, error: reviewedError } = await supabase
+    .from("extracted_events")
+    .select("id", { count: "exact", head: true })
+    .eq("source_file_id", sourceFileId)
+    .eq("reviewed", true);
+
+  if (reviewedError) {
+    console.error("getFileEventSummary: reviewed count failed", {
+      sourceFileId,
+      reviewedError,
+    });
+    return { ok: false, message: "Could not check this file's events. Please try again." };
+  }
+
+  return { ok: true, summary: { total: total ?? 0, reviewed: reviewed ?? 0 } };
+}
+
+export type DeleteFileEventsResult =
+  | { ok: true; deleted: number }
+  | { ok: false; message: string };
+
+export async function deleteFileEvents(
+  sourceFileId: string,
+  cruiseId: string,
+): Promise<DeleteFileEventsResult> {
+  if (typeof sourceFileId !== "string" || !UUID_PATTERN.test(sourceFileId)) {
+    return { ok: false, message: "Invalid file id." };
+  }
+  if (typeof cruiseId !== "string" || !UUID_PATTERN.test(cruiseId)) {
+    return { ok: false, message: "Invalid cruise id." };
+  }
+
+  const { supabase } = await requireUser();
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return {
+      ok: false,
+      message: "Your session has expired. Please sign in again.",
+    };
+  }
+
+  const { data: deleted, error: deleteError } = await supabase
+    .from("extracted_events")
+    .delete()
+    .eq("source_file_id", sourceFileId)
+    .select("id");
+
+  if (deleteError) {
+    console.error("deleteFileEvents: delete failed", { sourceFileId, deleteError });
+    return { ok: false, message: "Could not delete these events. Please try again." };
+  }
+
+  revalidatePath(filesPath(cruiseId));
+  return { ok: true, deleted: deleted?.length ?? 0 };
 }

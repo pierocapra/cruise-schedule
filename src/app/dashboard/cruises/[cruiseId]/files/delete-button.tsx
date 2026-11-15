@@ -8,10 +8,11 @@ import { deleteSourceFile } from "./actions";
 
 type DeleteButtonProps = {
   sourceFileId: string;
+  cruiseId: string;
   fileName: string;
 };
 
-export function DeleteButton({ sourceFileId, fileName }: DeleteButtonProps) {
+export function DeleteButton({ sourceFileId, cruiseId, fileName }: DeleteButtonProps) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -21,7 +22,7 @@ export function DeleteButton({ sourceFileId, fileName }: DeleteButtonProps) {
 
     startTransition(async () => {
       try {
-        const result = await deleteSourceFile(sourceFileId);
+        const result = await deleteSourceFile(sourceFileId, cruiseId);
 
         if (!result.ok) {
           setError(result.message);
