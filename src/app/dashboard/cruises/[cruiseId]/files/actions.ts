@@ -9,6 +9,10 @@ import { preparePastedText } from "@/lib/ingest/prepare-pasted-text";
 import { extractEvents } from "@/lib/extraction/extract-events";
 import { createGeminiClientFromEnv } from "@/lib/extraction/gemini-client";
 import { DEPARTMENT_NAMES } from "@/lib/extraction/department-names";
+import {
+  MAX_DAILY_EXTRACTIONS,
+  extractionWindowStart,
+} from "@/lib/extraction/extraction-limit";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -304,8 +308,6 @@ function blockedByEventsMessage(count: number | null): string {
   return `${subject}. Delete the events first, then delete the file.`;
 }
 
-const MAX_DAILY_EXTRACTIONS = Number(process.env.MAX_DAILY_EXTRACTIONS ?? "20");
-
 export type ExtractSourceEventsResult =
   | { ok: true; kept: number; rejected: number }
   | { ok: false; message: string };
@@ -371,7 +373,7 @@ export async function extractSourceEvents(
     };
   }
 
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const since = extractionWindowStart();
   const { count: recentCallCount, error: recentCallError } = await supabase
     .from("ai_extraction_calls")
     .select("id", { count: "exact", head: true })

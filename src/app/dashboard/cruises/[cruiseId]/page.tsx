@@ -4,12 +4,8 @@ import { Suspense } from "react";
 
 import { requireUser } from "@/lib/auth";
 
-const dateFormat = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
+import { ArchiveToggleButton } from "../archive-toggle-button";
+import { CruiseDetails } from "./cruise-details";
 
 type CruiseHubPageProps = {
   params: Promise<{ cruiseId: string }>;
@@ -21,7 +17,7 @@ async function CruiseHubContent({ params }: CruiseHubPageProps) {
 
   const { data: cruise, error } = await supabase
     .from("cruises")
-    .select("id, ship, start_date, end_date, itinerary_notes")
+    .select("id, ship, start_date, end_date, itinerary_notes, archived_at")
     .eq("id", cruiseId)
     .maybeSingle();
 
@@ -33,18 +29,21 @@ async function CruiseHubContent({ params }: CruiseHubPageProps) {
     notFound();
   }
 
+  const isArchived = cruise.archived_at !== null;
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">{cruise.ship ?? "No ship set"}</h1>
-        <p className="text-sm text-muted-foreground">
-          {dateFormat.format(new Date(`${cruise.start_date}T00:00:00Z`))} –{" "}
-          {dateFormat.format(new Date(`${cruise.end_date}T00:00:00Z`))}
-        </p>
-        {cruise.itinerary_notes && (
-          <p className="text-sm text-muted-foreground">{cruise.itinerary_notes}</p>
-        )}
-      </div>
+      {isArchived && (
+        <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/50 p-3">
+          <p className="text-sm">
+            This cruise is archived. It is hidden from your main list, but
+            everything in it is kept.
+          </p>
+          <ArchiveToggleButton cruiseId={cruise.id} archived />
+        </div>
+      )}
+
+      <CruiseDetails cruise={cruise} />
 
       <ul className="space-y-1 text-sm">
         <li>
@@ -60,6 +59,10 @@ async function CruiseHubContent({ params }: CruiseHubPageProps) {
         <li className="text-muted-foreground">Schedule (coming soon)</li>
         <li className="text-muted-foreground">Outputs (coming soon)</li>
       </ul>
+
+      {!isArchived && (
+        <ArchiveToggleButton cruiseId={cruise.id} archived={false} />
+      )}
     </div>
   );
 }
