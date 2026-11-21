@@ -52,7 +52,11 @@ async function CruiseHubContent({ params }: CruiseHubPageProps) {
             Sources
           </Link>
         </li>
-        <li className="text-muted-foreground">Review (coming soon)</li>
+        <li>
+          <Link href={`/dashboard/cruises/${cruise.id}/review`} className="underline">
+            Review events
+          </Link>
+        </li>
         <li className="text-muted-foreground">Schedule (coming soon)</li>
         <li className="text-muted-foreground">Outputs (coming soon)</li>
       </ul>

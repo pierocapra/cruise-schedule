@@ -4,6 +4,7 @@ import { ParseButton } from "./parse-button";
 import { DeleteButton } from "./delete-button";
 import { DeleteEventsButton } from "./delete-events-button";
 import { ExtractButton } from "./extract-button";
+import { MANUAL_FILE_TYPE } from "@/lib/extraction/manual-source";
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -39,13 +40,14 @@ type FilesContentProps = {
 export async function FilesContent({ cruiseId }: FilesContentProps) {
   const { supabase } = await requireUser();
 
-  const { data, error } = await supabase
-    .from("source_files")
-    .select(
-      "id, file_name, file_type, storage_path, created_at, parsed_at, needs_ocr, parse_warnings",
-    )
-    .eq("cruise_id", cruiseId)
-    .order("created_at", { ascending: false });
+ const { data, error } = await supabase
+  .from("source_files")
+  .select(
+    "id, file_name, file_type, storage_path, created_at, parsed_at, needs_ocr, parse_warnings",
+  )
+  .eq("cruise_id", cruiseId)
+  .neq("file_type", MANUAL_FILE_TYPE)
+  .order("created_at", { ascending: false });
 
   if (error) {
     return <p className="text-red-600">Could not load files: {error.message}</p>;
